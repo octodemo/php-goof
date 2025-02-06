@@ -1,0 +1,35 @@
+name: Opengrep
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  opengrep:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    name: Scan
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout project source
+      - uses: actions/checkout@v4
+
+      - run: |
+              echo "Download Open Grep"
+              curl -sL https://github.com/opengrep/opengrep/releases/download/v1.0.0-alpha.3/opengrep_manylinux_x86 -o /tmp/opengrep
+              chmod +x /tmp/opengrep
+              /tmp/opengrep scan --sarif-output=sarif.json .
+      # Upload SARIF file generated in previous step
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sarif.json
+        if: always()
